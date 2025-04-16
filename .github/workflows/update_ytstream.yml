@@ -1,4 +1,4 @@
-name: YouTube Live Stream Test
+name: YouTube Live Stream with Google Drive Video
 
 on:
   workflow_dispatch:
@@ -8,14 +8,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install FFmpeg
+      - name: Install FFmpeg and gdown
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
+          pip install gdown
 
-      - name: Download test video
+      - name: Download video from Google Drive using gdown
         run: |
-          wget https://file-examples.com/storage/fef3b37e2f154a2d90b3fd3/2017/04/file_example_MP4_480_1_5MG.mp4 -O video.mp4
+          gdown --id 1GGtvDWqLZQieNmVhp0CG5pmg2LDFu4bE -O video.mp4
+
+      - name: Confirm video file
+        run: |
+          ls -lh
+          file video.mp4
+          ffprobe -v error -show_format -show_streams video.mp4 || true
 
       - name: Stream to YouTube
         run: |
