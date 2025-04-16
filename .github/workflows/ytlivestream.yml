@@ -1,0 +1,39 @@
+name: YouTube Live Stream
+
+on:
+  workflow_dispatch:  # Allows manual start
+  schedule:
+    - cron: "0 */6 * * *"  # Restarts every 6 hours
+
+jobs:
+  livestream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository with LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Install Git LFS and pull video file
+        run: |
+          git lfs install
+          git lfs pull
+
+      - name: Verify video file exists
+        run: |
+          ls -la videos/
+          file videos/video.mp4
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Stream video to YouTube
+        run: |
+          ffmpeg -re -stream_loop -1 -i videos/video.mp4 \
+            -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+            -c:a aac -b:a 128k -f flv \
+            "rtmp://a.rtmp.youtube.com/live2/1axq-th5h-t5rq-g4x1-9q7d"
