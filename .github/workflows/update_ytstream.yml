@@ -1,0 +1,59 @@
+name: YouTube Live Stream
+
+on:
+  workflow_dispatch:  # Manually trigger the workflow
+
+jobs:
+  livestream:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+      
+      - name: Pull LFS files
+        run: |
+          git lfs pull
+          git lfs ls-files
+      
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      
+      - name: Verify video file
+        run: |
+          echo "Checking video file size and format:"
+          ls -lh videos/video.mp4
+          file videos/video.mp4
+          ffprobe -v error -show_format -show_streams videos/video.mp4
+      
+      - name: Convert video format if needed
+        run: |
+          echo "Converting video to ensure proper format for streaming"
+          ffmpeg -y -i videos/video.mp4 -c:v libx264 -preset veryfast -b:v 2500k -c:a aac -b:a 128k videos/stream_ready.mp4
+          echo "Conversion complete. New file details:"
+          ls -lh videos/stream_ready.mp4
+          file videos/stream_ready.mp4
+      
+      - name: Stream to YouTube
+        run: |
+          # YouTube stream key
+          YOUTUBE_STREAM_KEY="1axq-th5h-t5rq-g4x1-9q7d"
+          
+          # YouTube RTMP URL
+          YOUTUBE_RTMP="rtmp://a.rtmp.youtube.com/live2"
+          
+          echo "Starting stream to YouTube..."
+          
+          # Stream the converted video to YouTube
+          ffmpeg -re -i videos/stream_ready.mp4 \
+                 -c:v libx264 -preset ultrafast -b:v 2500k \
+                 -maxrate 2500k -bufsize 5000k \
+                 -c:a aac -b:a 128k \
+                 -ar 44100 -f flv \
+                 -flvflags no_duration_filesize \
+                 "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}"
