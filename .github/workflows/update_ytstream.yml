@@ -1,4 +1,4 @@
-name: YouTube Live Stream with Google Drive Video
+name: YouTube Live Stream Debug
 
 on:
   workflow_dispatch:
@@ -14,17 +14,17 @@ jobs:
           sudo apt-get install -y ffmpeg
           pip install gdown
 
-      - name: Download video from Google Drive using gdown
+      - name: Download video from Google Drive
         run: |
           gdown --id 1GGtvDWqLZQieNmVhp0CG5pmg2LDFu4bE -O video.mp4
 
-      - name: Confirm video file
+      - name: Check video file
         run: |
-          ls -lh
+          ls -lh video.mp4
           file video.mp4
           ffprobe -v error -show_format -show_streams video.mp4 || true
 
-      - name: Stream to YouTube
+      - name: Stream to YouTube with FFmpeg debug
         run: |
           YOUTUBE_STREAM_KEY="1axq-th5h-t5rq-g4x1-9q7d"
           YOUTUBE_RTMP="rtmp://a.rtmp.youtube.com/live2"
@@ -32,4 +32,5 @@ jobs:
           ffmpeg -re -i video.mp4 \
             -c:v libx264 -preset veryfast -b:v 2500k \
             -c:a aac -b:a 128k \
-            -f flv "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}"
+            -f flv "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}" \
+            -loglevel debug -report
