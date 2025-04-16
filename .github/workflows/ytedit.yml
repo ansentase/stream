@@ -14,25 +14,26 @@ jobs:
           lfs: true
           token: ${{ secrets.GH_PAT }}
 
-      - name: Setup Git LFS and pull video content
+      - name: Install Git LFS and Pull LFS files
         run: |
           git lfs install
           git lfs pull
+
+      - name: Verify LFS video exists
+        run: |
+          # Verifying that the video file exists after LFS pull
+          ls -la videos/
+          file videos/video.mp4
 
       - name: Install FFmpeg and fonts
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fontconfig fonts-dejavu
 
-      - name: Verify LFS video exists
-        run: |
-          ls -la stream/videos/
-          file stream/videos/video.mp4
-
       - name: Trim and overlay bold "Hello World"
         run: |
           mkdir -p lhs
-          ffmpeg -i stream/videos/video.mp4 -ss 00:00:00 -t 00:00:03 \
+          ffmpeg -i videos/video.mp4 -ss 00:00:00 -t 00:00:03 \
             -vf "drawtext=text='Hello World':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=36:borderw=2:bordercolor=black:x=(w-text_w)/2:y=(h-text_h)/2" \
             -c:a copy lhs/hello_world_video.mp4
 
