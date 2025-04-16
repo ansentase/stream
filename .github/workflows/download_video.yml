@@ -1,36 +1,62 @@
-name: Download and Push Google Drive Video (LFS)
+name: Download Video from Google Drive
 
-on: [workflow_dispatch]  # Manual trigger
+on:
+  workflow_dispatch:  # Manually trigger the workflow
 
 jobs:
-  download_video:
+  download-and-save:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout Repository with LFS
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          lfs: true
-
-      - name: Install gdown
-        run: pip install gdown
-
-      - name: Download Video from Google Drive
-        run: |
-          gdown --id 1GGtvDWqLZQieNmVhp0CG5pmg2LDFu4bE --output video.mp4
-
-      - name: Setup Git LFS and Track MP4
+          lfs: true  # Enable Git LFS
+          token: ${{ secrets.GH_PAT }}
+      
+      - name: Setup Git LFS
         run: |
           git lfs install
-          git lfs track "*.mp4"
-          git add .gitattributes
-
-      - name: Commit and Push to Repo
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          
+      - name: Create videos directory if it doesn't exist
+        run: mkdir -p videos
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install gdown
+      
+      - name: Download video from Google Drive
+        run: |
+          # Extract file ID from the Google Drive URL
+          FILE_ID="1GGtvDWqLZQieNmVhp0CG5pmg2LDFu4bE"
+          OUTPUT_FILE="videos/stream_video.mp4"
+          
+          # Download the video using gdown
+          gdown --id $FILE_ID -O $OUTPUT_FILE
+          
+      - name: Setup Git identity
         run: |
           git config --global user.name "ansentase"
           git config --global user.email "samomsan7@gmail.com"
-          git add video.mp4
-          git commit -m "Add video.mp4 via GitHub Actions using Git LFS"
-          git push https://x-access-token:${GH_PAT}@github.com/ansentase/stream.git HEAD:main
+      
+      - name: Track large files with Git LFS
+        run: |
+          git lfs track "videos/*.mp4"
+          git add .gitattributes
+      
+      - name: Add and commit video file
+        run: |
+          git add videos/stream_video.mp4
+          git commit -m "Add video file from Google Drive"
+          
+      - name: Push changes
+        run: |
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
