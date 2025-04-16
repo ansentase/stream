@@ -1,9 +1,9 @@
 name: YouTube Live Stream
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
   schedule:
-    - cron: "0 */6 * * *"  # Every 6 hours
+    - cron: "0 */6 * * *"
 
 jobs:
   stream:
@@ -13,19 +13,22 @@ jobs:
     - name: Checkout Repository with LFS
       uses: actions/checkout@v3
       with:
-        lfs: true  # Required to download actual video
+        lfs: true  # Required for large video file
 
     - name: Install FFmpeg
       run: sudo apt update && sudo apt install -y ffmpeg
 
     - name: Verify Video File
       run: |
-        if [ ! -f video.mp4 ]; then
-          echo "Error: video.mp4 not found!"
+        if [ ! -f stream/videos/video.mp4 ]; then
+          echo "Error: stream/videos/video.mp4 not found!"
           exit 1
         fi
-        ls -lh video.mp4
+        ls -lh stream/videos/video.mp4
 
     - name: Stream Video to YouTube
       run: |
-        ffmpeg -re -stream_loop -1 -i video.mp4 -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k -c:a aac -b:a 128k -f flv "rtmp://a.rtmp.youtube.com/live2/1axq-th5h-t5rq-g4x1-9q7d"
+        ffmpeg -re -stream_loop -1 -i stream/videos/video.mp4 \
+          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+          -c:a aac -b:a 128k -f flv \
+          "rtmp://a.rtmp.youtube.com/live2/1axq-th5h-t5rq-g4x1-9q7d"
