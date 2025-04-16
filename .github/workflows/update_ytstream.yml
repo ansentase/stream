@@ -1,45 +1,28 @@
-name: YouTube Live Stream
+name: YouTube Live Stream Test
 
 on:
   workflow_dispatch:
 
 jobs:
-  livestream:
+  teststream:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: Pull LFS files
-        run: git lfs pull
-
       - name: Install FFmpeg
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Verify video file
+      - name: Download sample video
         run: |
-          ls -lh videos/
-          file videos/video.mp4
-          ffprobe -v error -show_format -show_streams videos/video.mp4 || true
+          wget https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4 -O video.mp4
 
       - name: Stream to YouTube
         run: |
-          # Replace this with your actual stream key
           YOUTUBE_STREAM_KEY="1axq-th5h-t5rq-g4x1-9q7d"
           YOUTUBE_RTMP="rtmp://a.rtmp.youtube.com/live2"
 
-          # Video stream settings
-          VIDEO_BITRATE="2500k"
-          AUDIO_BITRATE="128k"
-
-          ffmpeg -re -i videos/video.mp4 \
-            -c:v libx264 -preset veryfast -b:v $VIDEO_BITRATE \
-            -c:a aac -b:a $AUDIO_BITRATE \
-            -f flv \
-            -flvflags no_duration_filesize \
-            "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}"
+          ffmpeg -re -i video.mp4 \
+            -c:v libx264 -preset veryfast -b:v 2500k \
+            -c:a aac -b:a 128k \
+            -f flv "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}"
