@@ -1,77 +1,45 @@
-name: YouTube Live Stream Diagnostic
+name: YouTube Live Stream
 
 on:
-  workflow_dispatch:  # Manual trigger only for testing
+  workflow_dispatch:
 
 jobs:
-  diagnose_and_stream:
+  livestream:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
-      with:
-        lfs: true
-    
-    - name: Git LFS Pull
-      run: git lfs pull
-      
-    - name: Find and examine video files
-      run: |
-        echo "==== Locating all MP4 files ===="
-        find . -name "*.mp4" -type f | tee found_videos.txt
-        
-        echo "==== File details for found videos ===="
-        if [ -s found_videos.txt ]; then
-          cat found_videos.txt | xargs ls -lah
-          cat found_videos.txt | xargs file
-        else
-          echo "No MP4 files found!"
-        fi
-        
-        echo "==== Checking specifically for videos/video.mp4 ===="
-        if [ -f "videos/video.mp4" ]; then
-          ls -lah videos/video.mp4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Pull LFS files
+        run: git lfs pull
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Verify video file
+        run: |
+          ls -lh videos/
           file videos/video.mp4
-          echo "==== Video metadata ===="
-          ffprobe -v error -show_entries format=duration,size,bit_rate -show_streams -of default=noprint_wrappers=1 videos/video.mp4 || echo "Failed to read video metadata"
-        else
-          echo "videos/video.mp4 does not exist!"
-        fi
-    
-    - name: Install ffmpeg
-      run: sudo apt update && sudo apt install -y ffmpeg
-    
-    - name: Test connection to YouTube RTMP server
-      run: |
-        echo "==== Testing YouTube RTMP connectivity ===="
-        # Test connectivity to YouTube's RTMP server
-        timeout 5 bash -c "</dev/tcp/a.rtmp.youtube.com/1935" && echo "Connection successful" || echo "Connection failed"
-    
-    - name: Create test video if needed
-      run: |
-        if [ ! -f "videos/video.mp4" ]; then
-          echo "==== Creating test video ===="
-          mkdir -p videos
-          ffmpeg -f lavfi -i testsrc=duration=60:size=1280x720:rate=30 -f lavfi -i sine=frequency=1000:duration=60 -c:v libx264 -pix_fmt yuv420p -c:a aac videos/test_video.mp4
-          echo "Test video created at videos/test_video.mp4"
-          ls -lah videos/test_video.mp4
-        fi
-    
-    - name: Stream to YouTube with verbose logging
-      run: |
-        echo "==== Starting YouTube Stream ===="
-        VIDEO_PATH=$([ -f "videos/video.mp4" ] && echo "videos/video.mp4" || echo "videos/test_video.mp4")
-        echo "Using video: $VIDEO_PATH"
-        
-        # Use -loglevel debug for verbose output, but limit the stream to 2 minutes for testing
-        timeout 120 ffmpeg -loglevel debug -re -stream_loop -1 -i "$VIDEO_PATH" \
-          -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -g 60 -keyint_min 60 -sc_threshold 0 \
-          -c:a aac -b:a 128k -ar 44100 \
-          -f flv "rtmp://a.rtmp.youtube.com/live2/1axq-th5h-t5rq-g4x1-9q7d" 2>&1 | tee stream_log.txt
-        
-        echo "==== Stream attempt completed ===="
-        # Check for common error patterns in log
-        echo "Checking logs for common errors:"
-        grep -i "error\|failed\|denied\|refused\|invalid" stream_log.txt || echo "No obvious errors found in log"
+          ffprobe -v error -show_format -show_streams videos/video.mp4 || true
+
+      - name: Stream to YouTube
+        run: |
+          # Replace this with your actual stream key
+          YOUTUBE_STREAM_KEY="1axq-th5h-t5rq-g4x1-9q7d"
+          YOUTUBE_RTMP="rtmp://a.rtmp.youtube.com/live2"
+
+          # Video stream settings
+          VIDEO_BITRATE="2500k"
+          AUDIO_BITRATE="128k"
+
+          ffmpeg -re -i videos/video.mp4 \
+            -c:v libx264 -preset veryfast -b:v $VIDEO_BITRATE \
+            -c:a aac -b:a $AUDIO_BITRATE \
+            -f flv \
+            -flvflags no_duration_filesize \
+            "${YOUTUBE_RTMP}/${YOUTUBE_STREAM_KEY}"
