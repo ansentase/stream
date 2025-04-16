@@ -1,4 +1,4 @@
-name: Edit Repository Video and Save with LFS
+name: Edit LFS Video and Save to lhs/
 
 on:
   workflow_dispatch:
@@ -8,30 +8,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository with LFS
         uses: actions/checkout@v4
         with:
           lfs: true
           token: ${{ secrets.GH_PAT }}
 
-      - name: Setup Git LFS
-        run: git lfs install
+      - name: Setup Git LFS and pull video content
+        run: |
+          git lfs install
+          git lfs pull
 
-      - name: Install FFmpeg and fontconfig
+      - name: Install FFmpeg and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fontconfig
+          sudo apt-get install -y ffmpeg fontconfig fonts-dejavu
 
-      - name: Verify input video
+      - name: Verify LFS video exists
         run: |
           ls -la stream/videos/
           file stream/videos/video.mp4
 
-      - name: Trim to 3s and overlay "Hello World"
+      - name: Trim and overlay bold "Hello World"
         run: |
           mkdir -p lhs
           ffmpeg -i stream/videos/video.mp4 -ss 00:00:00 -t 00:00:03 \
-            -vf "drawtext=text='Hello World':fontcolor=white:fontsize=36:font='FreeSerif':x=(w-text_w)/2:y=(h-text_h)/2:borderw=2:bordercolor=black" \
+            -vf "drawtext=text='Hello World':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontcolor=white:fontsize=36:borderw=2:bordercolor=black:x=(w-text_w)/2:y=(h-text_h)/2" \
             -c:a copy lhs/hello_world_video.mp4
 
       - name: Setup Git identity
@@ -39,15 +41,15 @@ jobs:
           git config --global user.name "ansentase"
           git config --global user.email "samomsan7@gmail.com"
 
-      - name: Track output with Git LFS
+      - name: Track with Git LFS
         run: |
           git lfs track "lhs/*.mp4"
           git add .gitattributes
 
-      - name: Commit and push edited video
+      - name: Commit and push
         run: |
           git add lhs/hello_world_video.mp4
-          git commit -m "Saved 3s trimmed video with Hello World overlay to lhs/"
+          git commit -m "Add trimmed video with 'Hello World' overlay"
           git push origin HEAD:main
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
