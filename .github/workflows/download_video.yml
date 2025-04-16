@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo with LFS
+      - name: Checkout Repository with LFS
         uses: actions/checkout@v3
         with:
           lfs: true
@@ -19,18 +19,18 @@ jobs:
         run: |
           gdown --id 1GGtvDWqLZQieNmVhp0CG5pmg2LDFu4bE --output video.mp4
 
-      - name: Setup Git LFS and Track File
+      - name: Setup Git LFS and Track MP4
         run: |
           git lfs install
           git lfs track "*.mp4"
           git add .gitattributes
 
-      - name: Commit and Push Video
+      - name: Commit and Push to Repo
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git config --global user.name "ansentase"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.email "samomsan7@gmail.com"
           git add video.mp4
           git commit -m "Add video.mp4 via GitHub Actions using Git LFS"
-          git push https://ansentase:$GH_PAT@github.com/ansentase/stream.git HEAD:main
+          git push https://x-access-token:${GH_PAT}@github.com/ansentase/stream.git HEAD:main
