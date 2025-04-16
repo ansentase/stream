@@ -13,9 +13,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Download sample video
+      - name: Download test video
         run: |
-          wget https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4 -O video.mp4
+          wget https://file-examples.com/storage/fef3b37e2f154a2d90b3fd3/2017/04/file_example_MP4_480_1_5MG.mp4 -O video.mp4
 
       - name: Stream to YouTube
         run: |
